@@ -218,23 +218,34 @@ class assign_submission_moderatorchat extends assign_submission_plugin {
         return (array) $this->get_config();
     }
 
-    // public static function observe_marker_updated($event) {
-    //   global $DB;
-    //
-    //   $comments = $DB->get_records('comments', ['id'=>$event->contextid, 'component'=>'assignsubmission_moderatorchat', 'commentarea'=>'submission_moderatorchat']);
-    //   $messagetext = '';
-    //   foreach($comments as $comment) {
-    //     $a = new stdClass();
-    //     $a->username = username($comment->userid);
-    //     $a->timecreated = userdate($comment->timecreated);
-    //     $a->content = $comment->content;
-    //     $messagetext .= get_string('commentinemail', 'assignsubmission_moderatorchat');
-    //   }
-    //   if (!is_empty($messagetext)) {
-    //     $user = $DB->get_record('user', array('id'=>$event->other['markerid']));
-    //     $from = get_noreply();
-    //     $subject = get_string('commentemailsubject', 'assignsubmission_moderatorchat');
-    //     email_to_user($user, $from, $subject, html_to_text($messagetext), $messagetext);
-    //   }
-    // }
+    public static function observe_marker_updated($event) {
+      global $DB;
+
+      $submission = $DB->get_record('assign_submission', ['id'=>$event->objectid]);
+      $student = $DB->get_record('user', ['id'=>$submission->userid]);
+      $comments = $DB->get_records(
+        'comments',
+        ['contextid'=>$event->contextid, 'component'=>'assignsubmission_moderatorchat', 'commentarea'=>'submission_moderatorchat'], 'timecreated desc');
+      // var_dump($comments);
+      // echo "<br>";
+      $messagetext = '';
+      foreach($comments as $comment) {
+        $user = $DB->get_record('user', ['id'=>$comment->userid]);
+        $a = new stdClass();
+        $a->username = fullname($user);
+        $a->timecreated = userdate($comment->timecreated, get_string('strftimedate', 'langconfig'));
+        $a->content = $comment->content;
+        $messagetext .= get_string('commentinemail', 'assignsubmission_moderatorchat', $a);
+      }
+      if (!empty($messagetext)) {
+        $user = $DB->get_record('user', array('id'=>$event->other['markerid']));
+        $from = core_user::get_noreply_user();
+        $subject = get_string('commentemailsubject', 'assignsubmission_moderatorchat');
+        $a = new stdClass();
+        $a->url = "{$CFG->wwwroot}/mod/assign/view.php?id={$event->contextinstanceid}&rownum=0&action=grader&userid={$submission->userid}";
+        $a->fullname = fullname($student);
+        $messagetext = get_string('commentemaillink', 'assignsubmission_moderatorchat', $a) . "<br>{$messagetext}";
+        email_to_user($user, $from, $subject, html_to_text($messagetext), $messagetext);
+      }
+    }
 }

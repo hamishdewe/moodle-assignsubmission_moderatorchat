@@ -28,3 +28,6 @@ $string['default_help'] = 'If set, this submission method will be enabled by def
 $string['enabled'] = 'Moderator chat';
 $string['enabled_help'] = 'If enabled, students can leave comments on their own submission. For example, this can be used for students to specify which is the master file when submitting inter-linked files.';
 $string['pluginname'] = 'Moderator chat';
+$string['commentemailsubject'] = 'Submission assigned with moderation comments';
+$string['commentemaillink'] = 'You are now the allocated marker for <a href="{$a->url}">{$a->fullname}</a>\'s submission.';
+$string['commentinemail'] = '<blockquote>{$a->content}<footer><small>&mdash; {$a->username} on {$a->timecreated}</small></footer></blockquote>';
