@@ -22,6 +22,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2020022701;
+$plugin->version   = 2020030201;
 $plugin->requires  = 2019051100;
 $plugin->component = 'assignsubmission_moderatorchat';

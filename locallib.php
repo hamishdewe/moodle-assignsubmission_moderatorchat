@@ -219,7 +219,7 @@ class assign_submission_moderatorchat extends assign_submission_plugin {
     }
 
     public static function observe_marker_updated($event) {
-      global $DB;
+      global $DB, $CFG;
 
       $submission = $DB->get_record('assign_submission', ['id'=>$event->objectid]);
       $student = $DB->get_record('user', ['id'=>$submission->userid]);
@@ -247,5 +247,38 @@ class assign_submission_moderatorchat extends assign_submission_plugin {
         $messagetext = get_string('commentemaillink', 'assignsubmission_moderatorchat', $a) . "<br>{$messagetext}";
         email_to_user($user, $from, $subject, html_to_text($messagetext), $messagetext);
       }
+    }
+
+    public static function observe_comment_created(\assignsubmission_moderatorchat\event\comment_created $event) {
+      global $DB, $CFG;
+
+      $submission = $DB->get_record('assign_submission', ['id'=>$event->other['itemid']]);
+      $flags = $DB->get_record('assign_user_flags', ['assignment'=>$submission->assignment, 'userid'=>$submission->userid]);
+
+      // Return early if no marker to send mail to.
+      if (!$flags->allocatedmarker) {
+        return;
+      }
+      // Return early if the commenter is the marker
+      if ($flags->allocatedmarker == $event->userid) {
+        return;
+      }
+
+      $comment = $DB->get_record('comments', ['id'=>$event->objectid]);
+      $commenter = $DB->get_record('user', ['id'=>$event->userid]);
+      $marker = $DB->get_record('user', ['id'=>$flags->allocatedmarker]);
+      $student = $DB->get_record('user', ['id'=>$submission->userid]);
+
+      $a = new stdClass();
+      $a->commenter = fullname($commenter);
+      $a->student = fullname($student);
+      $a->timecreated = userdate($comment->timecreated, get_string('strftimedate', 'langconfig'));
+      $a->content = $comment->content;
+      $from = core_user::get_noreply_user();
+      $subject = get_string('singlecommentsubject', 'assignsubmission_moderatorchat', $a);
+      $a->url = "{$CFG->wwwroot}/mod/assign/view.php?id={$event->contextinstanceid}&rownum=0&action=grader&userid={$submission->userid}";
+      $a->fullname = fullname($student);
+      $messagetext = get_string('singlecommentbody', 'assignsubmission_moderatorchat', $a);
+      email_to_user($marker, $from, $subject, html_to_text($messagetext), $messagetext);
     }
 }
